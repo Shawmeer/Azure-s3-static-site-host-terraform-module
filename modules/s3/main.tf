@@ -41,9 +41,4 @@ resource "aws_s3_bucket_policy" "allow_cloudfront" {
     ]
   })
 }
-resource "aws_s3_object" "index_html" {
-  bucket       = aws_s3_bucket.skr_bucket.bucket
-  key          = "index.html"
-  source       = "${path.module}/index.html"
-  content_type = "text/html"
-}
+
