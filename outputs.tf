@@ -16,16 +16,17 @@ output "storage_account_name" {
 }
 
 output "static_website_endpoint" {
-  description = "The static website endpoint (direct access)"
+  description = "Static website endpoint URL (accessible directly)"
   value       = module.azure_storage.static_website_endpoint
 }
 
-output "static_website_host" {
-  description = "The static website host"
-  value       = module.azure_storage.static_website_host
+# CDN Outputs (when enabled)
+output "cdn_endpoint_url" {
+  description = "CDN endpoint URL (when CDN is enabled)"
+  value       = var.enable_cdn ? module.azure_cdn[0].cdn_endpoint_url : null
 }
 
-output "cdn_endpoint_url" {
-  description = "The CDN endpoint URL"
-  value       = module.azure_cdn.cdn_endpoint_url
+output "cdn_endpoint_host_name" {
+  description = "CDN endpoint host name"
+  value       = var.enable_cdn ? module.azure_cdn[0].cdn_endpoint_host_name : null
 }

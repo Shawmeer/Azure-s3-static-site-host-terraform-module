@@ -36,6 +36,12 @@ variable "index_document" {
   default     = "index.html"
 }
 
+variable "enable_cdn" {
+  description = "Enable Azure CDN in front of the storage account"
+  type        = bool
+  default     = false
+}
+
 variable "cdn_profile_name" {
   description = "The name of the CDN profile"
   type        = string
@@ -45,11 +51,11 @@ variable "cdn_profile_name" {
 variable "cdn_endpoint_name" {
   description = "The name of the CDN endpoint"
   type        = string
-  default     = "samir-static-site-cdn"
+  default     = "cdn-endpoint"
 }
 
 variable "cdn_sku" {
-  description = "The SKU of the CDN profile"
+  description = "The SKU of the CDN profile (Standard_Microsoft, Standard_Verizon, Premium_Verizon)"
   type        = string
   default     = "Standard_Microsoft"
 }

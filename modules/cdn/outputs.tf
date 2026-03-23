@@ -1,17 +1,21 @@
-# Outputs for Azure CDN Module
+# CDN Module Outputs
 
-output "cdn_profile_id" {
-  value = azurerm_cdn_profile.cdn_profile.id
+output "cdn_profile_name" {
+  description = "The name of the CDN profile"
+  value       = azurerm_cdn_profile.this.name
 }
 
-output "cdn_endpoint_id" {
-  value = azurerm_cdn_endpoint.cdn_endpoint.id
+output "cdn_endpoint_name" {
+  description = "The name of the CDN endpoint"
+  value       = azurerm_cdn_endpoint.this.name
 }
 
 output "cdn_endpoint_host_name" {
-  value = azurerm_cdn_endpoint.cdn_endpoint.host_name
+  description = "The host name of the CDN endpoint"
+  value       = azurerm_cdn_endpoint.this.fqdn
 }
 
 output "cdn_endpoint_url" {
-  value = "https://${azurerm_cdn_endpoint.cdn_endpoint.host_name}"
+  description = "The URL of the CDN endpoint"
+  value       = "https://${azurerm_cdn_endpoint.this.fqdn}"
 }

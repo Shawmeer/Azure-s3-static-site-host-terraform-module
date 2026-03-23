@@ -1,14 +1,8 @@
-# Azure CDN Module Variables
+# CDN Module Variables
 
 variable "resource_group_name" {
   description = "The resource group name"
   type        = string
-}
-
-variable "location" {
-  description = "The Azure region where resources will be deployed"
-  type        = string
-  default     = "global"
 }
 
 variable "cdn_profile_name" {
@@ -23,13 +17,37 @@ variable "cdn_endpoint_name" {
   default     = "cdn-endpoint"
 }
 
-variable "storage_account_primary_web_endpoint" {
-  description = "The primary web endpoint of the storage account"
-  type        = string
-}
-
 variable "cdn_sku" {
   description = "The SKU of the CDN profile"
   type        = string
   default     = "Standard_Microsoft"
+}
+
+variable "storage_account_primary_endpoint" {
+  description = "The primary endpoint of the storage account"
+  type        = string
+}
+
+variable "index_document" {
+  description = "The index document for the static website"
+  type        = string
+  default     = "index.html"
+}
+
+variable "enable_spa_redirect" {
+  description = "Enable SPA redirect for routing"
+  type        = bool
+  default     = true
+}
+
+variable "custom_domain" {
+  description = "Custom domain to use (optional)"
+  type        = string
+  default     = null
+}
+
+variable "tags" {
+  description = "Tags to apply to resources"
+  type        = map(string)
+  default     = {}
 }

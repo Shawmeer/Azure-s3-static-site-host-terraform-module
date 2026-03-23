@@ -1,36 +1,26 @@
 # Azure CDN Module
-# Equivalent to AWS CloudFront distribution
+# Uses Azure CDN in front of Storage Account static website
 
-resource "azurerm_cdn_profile" "cdn_profile" {
+resource "azurerm_cdn_profile" "this" {
   name                = var.cdn_profile_name
   location            = "global"
   resource_group_name = var.resource_group_name
   sku                 = var.cdn_sku
-
-  tags = {
-    Environment = "Dev"
-    Project      = "Static Website CDN"
-  }
 }
 
-resource "azurerm_cdn_endpoint" "cdn_endpoint" {
+resource "azurerm_cdn_endpoint" "this" {
   name                = var.cdn_endpoint_name
+  profile_name        = azurerm_cdn_profile.this.name
   location            = "global"
-  profile_name        = azurerm_cdn_profile.cdn_profile.name
   resource_group_name = var.resource_group_name
 
   origin {
-    name      = "storage-origin"
-    host_name = var.storage_account_primary_web_endpoint
+    name           = "storage-origin"
+    host_name      = var.storage_account_primary_endpoint
+    https_port     = 443
+    http_port      = 80
   }
 
-  origin_host_header = var.storage_account_primary_web_endpoint
-
-  is_https_allowed = true
   is_http_allowed  = true
-
-  tags = {
-    Environment = "Dev"
-    Project      = "Static Website CDN"
-  }
+  is_https_allowed = true
 }

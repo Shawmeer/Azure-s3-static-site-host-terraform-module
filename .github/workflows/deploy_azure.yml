@@ -1,7 +1,6 @@
 # Azure workflow file
-# This workflow deploys to Azure (AZURE_CDN)
 
-name: Deploy to Azure CDN
+name: Deploy to Azure Storage
 
 on:
   push:
@@ -12,6 +11,7 @@ on:
 env:
   AZURE_REGION: eastus
   STORAGE_ACCOUNT_NAME: samirazurestaticsite
+  RESOURCE_GROUP_NAME: azure-static-site-rg
 
 jobs:
   deploy:
@@ -41,21 +41,25 @@ jobs:
         with:
           creds: '${{ secrets.AZURE_CREDENTIALS }}'
 
-      - name: Upload to Azure Blob Storage
+      - name: Upload to Azure Blob Storage $web container
         run: |
           az storage blob upload-batch \
             --source ./static-site-react/dist \
             --destination '$web' \
             --account-name ${{ env.STORAGE_ACCOUNT_NAME }}
 
-      - name: Purge Azure CDN endpoint
+      - name: Get static website endpoint
+        id: website
         run: |
-          az cdn endpoint purge \
-            --resource-group azure-static-site-rg \
-            --profile-name cdn-profile \
+          ENDPOINT=$(az storage account show \
             --name ${{ env.STORAGE_ACCOUNT_NAME }} \
-            --content-paths "/*"
+            --resource-group ${{ env.RESOURCE_GROUP_NAME }} \
+            --query "primaryEndpoints.web" \
+            --output tsv)
+          echo "endpoint=$ENDPOINT" >> $GITHUB_OUTPUT
+          echo "Static website: $ENDPOINT"
 
       - name: Deploy success message
         run: |
-          echo "✅ Azure deployment completed successfully!"
+          echo "✅ Azure deployment completed!"
+          echo "🌐 Website URL: ${{ steps.website.outputs.endpoint }}"

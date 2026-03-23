@@ -150,3 +150,13 @@ logs
 .yarn/global
 .yarn/patches
 .yarn/plugins       
+
+
+
+
+
+gh repo create s3-website-hosting-using-terraform-modules \
+  --public \
+  --source=. \
+  --remote=origin \
+  --push

@@ -1,5 +1,4 @@
 # Azure Storage Account for Static Website Hosting
-# Equivalent to AWS S3 bucket website configuration
 
 resource "azurerm_resource_group" "rg" {
   name     = var.resource_group_name

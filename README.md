@@ -1,16 +1,16 @@
 # Static Website Hosting with Terraform Modules
 
-This project sets up static website hosting on **Azure** using Storage Accounts and CDN, managed with Terraform modules. It includes automated CI/CD deployment via GitHub Actions.
+This project sets up static website hosting on **Azure** using Storage Accounts with Static Website feature, managed with Terraform modules. It includes automated CI/CD deployment via GitHub Actions.
 
-> Note: The previous AWS (S3 + CloudFront) version has been replaced with Azure.
+> Note: Uses Azure Storage Account Static Website - **free tier eligible**!
 
 ## Architecture
 
 ```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────┐     ┌─────────────┐
-│   GitHub        │────▶│   Azure Storage   │────▶│  Azure CDN  │────▶│   Users     │
-│   (Push to main)│     │   Account        │     │             │     │             │
-└─────────────────┘     └──────────────────┘     └─────────────┘     └─────────────┘
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│   GitHub        │────▶│   Azure Storage │────▶│   Users         │
+│   (Push to main)│     │   Account        │     │   (Browser)     │
+└─────────────────┘     └──────────────────┘     └─────────────────┘
 ```
 
 ## Project Structure
@@ -19,18 +19,13 @@ This project sets up static website hosting on **Azure** using Storage Accounts 
 .
 ├── .github/
 │   └── workflows/
-│       ├── deploy.yml             # AWS CloudFront CI/CD
-│       └── deploy_azure.yml       # Azure CDN CI/CD
+│       └── deploy_azure.yml       # Azure deployment workflow
 ├── .gitignore
 ├── main.tf                        # Root Terraform configuration
 ├── outputs.tf                     # Root outputs
 ├── providers.tf                   # Azure provider configuration
 ├── variables.tf                   # Root variables
 ├── modules/
-│   ├── cdn/
-│   │   ├── main.tf
-│   │   ├── outputs.tf
-│   │   └── variables.tf
 │   └── storage-account/
 │       ├── main.tf
 │       ├── outputs.tf
@@ -47,7 +42,7 @@ This project sets up static website hosting on **Azure** using Storage Accounts 
 - [Terraform](https://www.terraform.io/downloads) >= 1.0
 - [Node.js](https://nodejs.org/) >= 18
 - [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli)
-- Azure Account with appropriate subscriptions
+- Azure Account with free trial or subscription
 
 ## Getting Started
 
@@ -56,9 +51,6 @@ This project sets up static website hosting on **Azure** using Storage Accounts 
 ```bash
 # Login to Azure
 az login
-
-# Set subscription (if needed)
-az account set --subscription "your-subscription-id"
 ```
 
 ### 2. Initialize Terraform
@@ -81,17 +73,16 @@ terraform apply
 
 After deployment, you'll see:
 - `storage_account_name` - Azure Storage Account name
-- `static_website_endpoint` - Static website endpoint
-- `cdn_endpoint_url` - CDN endpoint URL
+- `static_website_endpoint` - Static website endpoint URL
 
 ### 5. Upload React Files
 
 ```bash
-# Upload built React app to Azure Blob Storage
+# Upload built React app to Azure Blob Storage $web container
 az storage blob upload-batch \
   --source ./static-site-react/dist \
   --destination '$web' \
-  --account-name <storage-account-name>
+  --account-name samirazurestaticsite
 ```
 
 ## GitHub Actions CI/CD
@@ -114,7 +105,7 @@ az ad sp create-for-rbac --name "github-actions" --role Contributor --scope /sub
 ### Workflow Triggers
 
 - **Automatic**: Push to `main` branch
-- **Manual**: Go to GitHub Actions tab → Deploy to Azure CDN → Run workflow
+- **Manual**: Go to GitHub Actions tab → Deploy to Azure Storage → Run workflow
 
 ## Variables
 
@@ -126,9 +117,6 @@ az ad sp create-for-rbac --name "github-actions" --role Contributor --scope /sub
 | `storage_account_tier` | Storage tier | `Standard` |
 | `storage_account_replication_type` | Replication type | `LRS` |
 | `index_document` | Index document | `index.html` |
-| `cdn_profile_name` | CDN profile name | `cdn-profile` |
-| `cdn_endpoint_name` | CDN endpoint name | `samir-static-site-cdn` |
-| `cdn_sku` | CDN SKU | `Standard_Microsoft` |
 
 ## Customization
 
@@ -169,22 +157,21 @@ To destroy all resources:
 terraform destroy
 ```
 
-## Azure vs AWS Comparison
+## Azure Free Tier
 
-| Feature | AWS | Azure |
-|---------|-----|-------|
-| Storage | S3 Bucket | Blob Storage Account |
-| CDN | CloudFront | Azure CDN |
-| Static Website | S3 Website Hosting | Static Website (preview) |
-| TLS | CloudFront Certificate | Azure CDN Managed |
-| Global Distribution | 250+ edge locations | 130+ point of presence |
+This setup uses **Azure Storage Account Static Website** which is **free tier eligible**:
+
+- **5 GB storage** - free
+- **2 million read requests** - free
+- **2 million write requests** - free
+
+For more details, see: https://azure.microsoft.com/free/
 
 ## Notes
 
-- The storage account allows public read access through CDN
-- CDN serves content globally with edge caching
-- The `$web` blob container stores static files
-- Cache purge runs after each deployment for updates
+- Files are stored in the `$web` blob container for static website hosting
+- The static website feature provides direct HTTP/HTTPS access
+- Custom routing for SPA apps is supported through the index document
 
 ## License
 
