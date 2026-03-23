@@ -1,14 +1,16 @@
-# S3 Website Hosting with Terraform Modules
+# Static Website Hosting with Terraform Modules
 
-This project sets up static website hosting on AWS using S3 and CloudFront, managed with Terraform modules. It includes automated CI/CD deployment via GitHub Actions.
+This project sets up static website hosting on **Azure** using Storage Accounts and CDN, managed with Terraform modules. It includes automated CI/CD deployment via GitHub Actions.
+
+> Note: The previous AWS (S3 + CloudFront) version has been replaced with Azure.
 
 ## Architecture
 
 ```
-┌─────────────────┐     ┌─────────────┐     ┌──────────────┐     ┌─────────────┐
-│   GitHub        │────▶│   S3        │────▶│  CloudFront  │────▶│   Users     │
-│   (Push to main)│     │   Bucket    │     │  CDN         │     │             │
-└─────────────────┘     └─────────────┘     └──────────────┘     └─────────────┘
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────┐     ┌─────────────┐
+│   GitHub        │────▶│   Azure Storage   │────▶│  Azure CDN  │────▶│   Users     │
+│   (Push to main)│     │   Account        │     │             │     │             │
+└─────────────────┘     └──────────────────┘     └─────────────┘     └─────────────┘
 ```
 
 ## Project Structure
@@ -17,22 +19,23 @@ This project sets up static website hosting on AWS using S3 and CloudFront, mana
 .
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml          # CI/CD workflow
+│       ├── deploy.yml             # AWS CloudFront CI/CD
+│       └── deploy_azure.yml       # Azure CDN CI/CD
 ├── .gitignore
-├── main.tf                     # Root Terraform configuration
-├── outputs.tf                  # Root outputs
-├── providers.tf                # AWS provider configuration
-├── variables.tf                # Root variables
+├── main.tf                        # Root Terraform configuration
+├── outputs.tf                     # Root outputs
+├── providers.tf                   # Azure provider configuration
+├── variables.tf                   # Root variables
 ├── modules/
-│   ├── cloudfront/
+│   ├── cdn/
 │   │   ├── main.tf
 │   │   ├── outputs.tf
 │   │   └── variables.tf
-│   └── s3/
+│   └── storage-account/
 │       ├── main.tf
 │       ├── outputs.tf
 │       └── variables.tf
-└── static-site-react/          # React frontend application
+└── static-site-react/             # React frontend application
     ├── src/
     ├── public/
     ├── package.json
@@ -43,16 +46,19 @@ This project sets up static website hosting on AWS using S3 and CloudFront, mana
 
 - [Terraform](https://www.terraform.io/downloads) >= 1.0
 - [Node.js](https://nodejs.org/) >= 18
-- [AWS CLI](https://aws.amazon.com/cli/)
-- AWS Account with appropriate permissions
+- [Azure CLI](https://docs.microsoft.com/cli/azure/install-azure-cli)
+- Azure Account with appropriate subscriptions
 
 ## Getting Started
 
-### 1. Configure AWS Credentials
+### 1. Authenticate to Azure
 
 ```bash
-# Configure AWS CLI
-aws configure
+# Login to Azure
+az login
+
+# Set subscription (if needed)
+az account set --subscription "your-subscription-id"
 ```
 
 ### 2. Initialize Terraform
@@ -74,9 +80,19 @@ terraform apply
 ### 4. Get Outputs
 
 After deployment, you'll see:
-- `bucket_name` - S3 bucket name
-- `website_endpoint` - S3 website endpoint
-- `cloudfront_url` - CloudFront distribution URL
+- `storage_account_name` - Azure Storage Account name
+- `static_website_endpoint` - Static website endpoint
+- `cdn_endpoint_url` - CDN endpoint URL
+
+### 5. Upload React Files
+
+```bash
+# Upload built React app to Azure Blob Storage
+az storage blob upload-batch \
+  --source ./static-site-react/dist \
+  --destination '$web' \
+  --account-name <storage-account-name>
+```
 
 ## GitHub Actions CI/CD
 
@@ -84,68 +100,48 @@ The project includes automated deployment via GitHub Actions.
 
 ### Setup
 
-1. **Create IAM User** with these permissions:
+1. **Create Azure Service Principal** with contributor permissions:
 
-```json
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Sid": "AllowS3Sync",
-      "Effect": "Allow",
-      "Action": [
-        "s3:PutObject",
-        "s3:DeleteObject",
-        "s3:ListBucket"
-      ],
-      "Resource": [
-        "arn:aws:s3:::samir-module-s3-bucket-hosting",
-        "arn:aws:s3:::samir-module-s3-bucket-hosting/*"
-      ]
-    },
-    {
-      "Sid": "AllowCloudFrontInvalidation",
-      "Effect": "Allow",
-      "Action": [
-        "cloudfront:CreateInvalidation"
-      ],
-      "Resource": "*"
-    }
-  ]
-}
+```bash
+# Create service principal
+az ad sp create-for-rbac --name "github-actions" --role Contributor --scope /subscriptions/<subscription-id>
 ```
 
 2. **Add GitHub Secrets:**
    - Go to: **Settings → Secrets and variables → Actions**
-   - Add `AWS_ACCESS_KEY_ID`
-   - Add `AWS_SECRET_ACCESS_KEY`
+   - Add `AZURE_CREDENTIALS` with the JSON output from the previous step
 
 ### Workflow Triggers
 
 - **Automatic**: Push to `main` branch
-- **Manual**: Go to GitHub Actions tab → Deploy to CloudFront → Run workflow
+- **Manual**: Go to GitHub Actions tab → Deploy to Azure CDN → Run workflow
 
 ## Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `bucket_name` | S3 bucket name | `samir-module-s3-bucket-hosting` |
+| `resource_group_name` | Resource group name | `azure-static-site-rg` |
+| `storage_account_name` | Storage account name | `samirazurestaticsite` |
+| `location` | Azure region | `eastus` |
+| `storage_account_tier` | Storage tier | `Standard` |
+| `storage_account_replication_type` | Replication type | `LRS` |
 | `index_document` | Index document | `index.html` |
-| `error_document` | Error document | `error.html` |
-| `region` | AWS region | `ap-south-1` |
+| `cdn_profile_name` | CDN profile name | `cdn-profile` |
+| `cdn_endpoint_name` | CDN endpoint name | `samir-static-site-cdn` |
+| `cdn_sku` | CDN SKU | `Standard_Microsoft` |
 
 ## Customization
 
-### Change Bucket Name
+### Change Storage Account Name
 
 ```bash
-terraform apply -var="bucket_name=my-custom-bucket"
+terraform apply -var="storage_account_name=my-custom-account"
 ```
 
-### Change AWS Region
+### Change Azure Region
 
 ```bash
-terraform apply -var="region=us-east-1"
+terraform apply -var="location=westus2"
 ```
 
 ## Development
@@ -173,12 +169,22 @@ To destroy all resources:
 terraform destroy
 ```
 
+## Azure vs AWS Comparison
+
+| Feature | AWS | Azure |
+|---------|-----|-------|
+| Storage | S3 Bucket | Blob Storage Account |
+| CDN | CloudFront | Azure CDN |
+| Static Website | S3 Website Hosting | Static Website (preview) |
+| TLS | CloudFront Certificate | Azure CDN Managed |
+| Global Distribution | 250+ edge locations | 130+ point of presence |
+
 ## Notes
 
-- The S3 bucket policy allows public read access only through CloudFront (OAC)
-- CloudFront redirects HTTP to HTTPS
-- Custom error pages (403, 404) return `index.html` for SPA routing support
-- Cache invalidation runs automatically after each deployment
+- The storage account allows public read access through CDN
+- CDN serves content globally with edge caching
+- The `$web` blob container stores static files
+- Cache purge runs after each deployment for updates
 
 ## License
 

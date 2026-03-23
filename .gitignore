@@ -141,3 +141,12 @@ logs
 # Cache
 .cache/
 .parcel-cache/
+.gitignores
+.yarn/cache 
+.yarn/cache.lock
+.yarn/install   
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/global
+.yarn/patches
+.yarn/plugins       

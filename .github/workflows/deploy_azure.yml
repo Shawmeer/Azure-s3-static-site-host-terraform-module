@@ -1,0 +1,61 @@
+# Azure workflow file
+# This workflow deploys to Azure (AZURE_CDN)
+
+name: Deploy to Azure CDN
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AZURE_REGION: eastus
+  STORAGE_ACCOUNT_NAME: samirazurestaticsite
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: static-site-react/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./static-site-react
+        run: npm ci
+
+      - name: Build React app
+        working-directory: ./static-site-react
+        run: npm run build
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: '${{ secrets.AZURE_CREDENTIALS }}'
+
+      - name: Upload to Azure Blob Storage
+        run: |
+          az storage blob upload-batch \
+            --source ./static-site-react/dist \
+            --destination '$web' \
+            --account-name ${{ env.STORAGE_ACCOUNT_NAME }}
+
+      - name: Purge Azure CDN endpoint
+        run: |
+          az cdn endpoint purge \
+            --resource-group azure-static-site-rg \
+            --profile-name cdn-profile \
+            --name ${{ env.STORAGE_ACCOUNT_NAME }} \
+            --content-paths "/*"
+
+      - name: Deploy success message
+        run: |
+          echo "✅ Azure deployment completed successfully!"

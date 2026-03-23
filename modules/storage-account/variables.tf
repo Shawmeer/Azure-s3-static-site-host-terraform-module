@@ -1,15 +1,13 @@
-# Azure Variables
+# Azure Storage Account Variables
 
 variable "resource_group_name" {
   description = "The resource group name"
   type        = string
-  default     = "azure-static-site-rg"
 }
 
 variable "storage_account_name" {
   description = "The name of the storage account"
   type        = string
-  default     = "samirazurestaticsite"
 }
 
 variable "location" {
@@ -34,22 +32,4 @@ variable "index_document" {
   description = "The index document for the static website"
   type        = string
   default     = "index.html"
-}
-
-variable "cdn_profile_name" {
-  description = "The name of the CDN profile"
-  type        = string
-  default     = "cdn-profile"
-}
-
-variable "cdn_endpoint_name" {
-  description = "The name of the CDN endpoint"
-  type        = string
-  default     = "samir-static-site-cdn"
-}
-
-variable "cdn_sku" {
-  description = "The SKU of the CDN profile"
-  type        = string
-  default     = "Standard_Microsoft"
 }
