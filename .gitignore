@@ -160,3 +160,8 @@ gh repo create s3-website-hosting-using-terraform-modules \
   --source=. \
   --remote=origin \
   --push
+
+
+  tfplan
+  tfplan-cdn
+  tfplan-output

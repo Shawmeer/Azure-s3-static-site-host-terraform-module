@@ -18,7 +18,7 @@ variable "cdn_endpoint_name" {
 }
 
 variable "cdn_sku" {
-  description = "The SKU of the CDN profile"
+  description = "The SKU of the CDN profile (Standard_Microsoft, Standard_Verizon, Premium_Verizon)"
   type        = string
   default     = "Standard_Microsoft"
 }
