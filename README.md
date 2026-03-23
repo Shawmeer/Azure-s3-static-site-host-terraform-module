@@ -1,16 +1,16 @@
 # Static Website Hosting with Terraform Modules
 
-This project sets up static website hosting on **Azure** using Storage Accounts with Static Website feature, managed with Terraform modules. It includes automated CI/CD deployment via GitHub Actions.
+This project sets up static website hosting on **Azure** using Storage Accounts with Static Website feature, managed with Terraform modules. It includes optional CDN for global content delivery and automated CI/CD deployment via GitHub Actions.
 
 > Note: Uses Azure Storage Account Static Website - **free tier eligible**!
 
 ## Architecture
 
 ```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│   GitHub        │────▶│   Azure Storage │────▶│   Users         │
-│   (Push to main)│     │   Account        │     │   (Browser)     │
-└─────────────────┘     └──────────────────┘     └─────────────────┘
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│   GitHub        │────▶│   Azure Storage │────▶│   CDN (Optional)│────▶│   Users         │
+│   (Push to main)│     │   Account        │     │                 │     │   (Browser)     │
+└─────────────────┘     └──────────────────┘     └─────────────────┘     └─────────────────┘
 ```
 
 ## Project Structure
@@ -25,8 +25,13 @@ This project sets up static website hosting on **Azure** using Storage Accounts 
 ├── outputs.tf                     # Root outputs
 ├── providers.tf                   # Azure provider configuration
 ├── variables.tf                   # Root variables
+├── terraform.tfvars               # Variable values
 ├── modules/
-│   └── storage-account/
+│   ├── storage-account/
+│   │   ├── main.tf
+│   │   ├── outputs.tf
+│   │   └── variables.tf
+│   └── cdn/
 │       ├── main.tf
 │       ├── outputs.tf
 │       └── variables.tf
@@ -59,7 +64,26 @@ az login
 terraform init
 ```
 
-### 3. Plan and Apply
+### 3. Configure Variables
+
+Edit `terraform.tfvars` to set your preferred values:
+
+```hcl
+resource_group_name              = "azure-static-site-rg"
+storage_account_name             = "samirazurestaticsite"
+location                         = "eastus"
+storage_account_tier             = "Standard"
+storage_account_replication_type = "LRS"
+index_document                   = "index.html"
+
+# CDN Configuration (Optional)
+enable_cdn        = false         # Set to true to enable CDN
+cdn_profile_name  = "samir-cdn-profile"
+cdn_endpoint_name = "samir-cdn-endpoint"
+cdn_sku          = "Standard_Microsoft"  # CDN SKU
+```
+
+### 4. Plan and Apply
 
 ```bash
 # Review changes
@@ -69,13 +93,15 @@ terraform plan
 terraform apply
 ```
 
-### 4. Get Outputs
+### 5. Get Outputs
 
 After deployment, you'll see:
 - `storage_account_name` - Azure Storage Account name
 - `static_website_endpoint` - Static website endpoint URL
+- `cdn_endpoint_url` - CDN endpoint URL (when CDN is enabled)
+- `cdn_endpoint_host_name` - CDN endpoint host name (when CDN is enabled)
 
-### 5. Upload React Files
+### 6. Upload React Files
 
 ```bash
 # Upload built React app to Azure Blob Storage $web container
@@ -84,6 +110,40 @@ az storage blob upload-batch \
   --destination '$web' \
   --account-name samirazurestaticsite
 ```
+
+## CDN Configuration
+
+The project includes an optional CDN module that can be enabled for global content delivery.
+
+### Enabling CDN
+
+Set `enable_cdn = true` in `terraform.tfvars`:
+
+```hcl
+enable_cdn        = true
+cdn_profile_name  = "samir-cdn-profile"
+cdn_endpoint_name = "samir-cdn-endpoint"
+cdn_sku          = "Standard_Microsoft"
+```
+
+### Available CDN SKUs
+
+| SKU | Description |
+|-----|-------------|
+| `Standard_Microsoft` | Azure CDN from Microsoft (default) |
+| `Standard_Verizon` | Azure CDN from Verizon |
+| `Premium_Verizon` | Azure CDN Premium from Verizon |
+
+> **Note**: Azure CDN (classic) and Azure Front Door may not be available on all subscription types including free trial accounts. If CDN creation fails, you can still use the storage account static website directly.
+
+### CDN Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `enable_cdn` | Enable CDN | `false` |
+| `cdn_profile_name` | CDN profile name | `cdn-profile` |
+| `cdn_endpoint_name` | CDN endpoint name | `cdn-endpoint` |
+| `cdn_sku` | CDN SKU | `Standard_Microsoft` |
 
 ## GitHub Actions CI/CD
 
@@ -117,6 +177,10 @@ az ad sp create-for-rbac --name "github-actions" --role Contributor --scope /sub
 | `storage_account_tier` | Storage tier | `Standard` |
 | `storage_account_replication_type` | Replication type | `LRS` |
 | `index_document` | Index document | `index.html` |
+| `enable_cdn` | Enable CDN | `false` |
+| `cdn_profile_name` | CDN profile name | `cdn-profile` |
+| `cdn_endpoint_name` | CDN endpoint name | `cdn-endpoint` |
+| `cdn_sku` | CDN SKU | `Standard_Microsoft` |
 
 ## Customization
 
@@ -130,6 +194,12 @@ terraform apply -var="storage_account_name=my-custom-account"
 
 ```bash
 terraform apply -var="location=westus2"
+```
+
+### Enable CDN
+
+```bash
+terraform apply -var="enable_cdn=true"
 ```
 
 ## Development
@@ -172,6 +242,8 @@ For more details, see: https://azure.microsoft.com/free/
 - Files are stored in the `$web` blob container for static website hosting
 - The static website feature provides direct HTTP/HTTPS access
 - Custom routing for SPA apps is supported through the index document
+- CDN is optional and can be enabled/disabled via `terraform.tfvars`
+- Both Azure CDN and Azure Front Door are available as CDN options
 
 ## License
 
